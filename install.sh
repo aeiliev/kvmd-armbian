@@ -489,10 +489,12 @@ build-ustreamer() {
   cd /tmp
   git clone --depth=1 https://github.com/pikvm/ustreamer
   cd ustreamer/
-  make WITH_GPIO=1 WITH_SYSTEMD=1 WITH_JANUS=1 WITH_V4P=1 -j
+  make WITH_GPIO=1 WITH_SYSTEMD=1 WITH_JANUS=1 WITH_PYTHON=1 WITH_V4P=1 -j
   make install
+  cp -r python/root /
   # kvmd service is looking for /usr/bin/ustreamer
   ln -sf /usr/local/bin/ustreamer* /usr/bin/
+  ln -sf /usr/local/lib/python3.1*/dist-packages/ustreamer* ${PYTHONDIR}
 
   # add janus support
   mkdir -p /usr/lib/ustreamer/janus
@@ -503,8 +505,8 @@ install-dependencies() {
   echo
   echo "-> Installing dependencies for pikvm" | tee -a $LOGFILE
 
-  echo "apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev" | tee -a $LOGFILE
-  apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev >> $LOGFILE
+  echo "apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip python3-wheel python3-build tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev" | tee -a $LOGFILE
+  apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip python3-wheel python3-build tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev >> $LOGFILE
 
   sed -i -e 's/#port=5353/port=5353/g' /etc/dnsmasq.conf
 
@@ -984,7 +986,7 @@ chmod +x /usr/local/bin/pi* /usr/local/bin/update-rpikvm.sh
 ### fix for kvmd 3.230 and higher
 ln -sf python3 /usr/bin/python
 
-SERVICES="kvmd-nginx kvmd-webterm kvmd-otg kvmd kvmd-fix"
+SERVICES="kvmd-nginx kvmd-webterm kvmd-otg kvmd kvmd-fix kvmd-vnc"
 
 # added option to re-install by adding -f parameter (for use as platform switcher)
 PYTHON_VERSION=$( python3 -V | awk '{print $2}' | cut -d'.' -f1,2 )

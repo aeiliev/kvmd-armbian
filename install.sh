@@ -90,6 +90,9 @@ create-override() {
       cat <<USBOVERRIDE >> /etc/kvmd/override.yaml
 kvmd:
     hid:
+        jiggler:
+            enabled: true
+            active: false
         mouse_alt:
             device: /dev/kvmd-hid-mouse-alt  # allow relative mouse mode
     msd:
@@ -101,7 +104,10 @@ kvmd:
         cmd_append:
             - "--slowdown"      # so target doesn't have to reboot
         resolution:
-            default: 1280x720
+            default: 1920x1080
+vnc:
+    server:
+        host: 0.0.0.0
 USBOVERRIDE
 
     else
@@ -113,6 +119,9 @@ kvmd:
         fan:
             unix: ''
     hid:
+        jiggler:
+            enabled: true
+            active: false
         mouse_alt:
             device: /dev/kvmd-hid-mouse-alt
     msd:
@@ -121,6 +130,9 @@ kvmd:
         forever: true
         cmd_append:
             - "--slowdown"      # so target doesn't have to reboot
+vnc:
+    server:
+        host: 0.0.0.0
 CSIOVERRIDE
 
     fi
@@ -505,8 +517,8 @@ install-dependencies() {
   echo
   echo "-> Installing dependencies for pikvm" | tee -a $LOGFILE
 
-  echo "apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip python3-wheel python3-build tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev" | tee -a $LOGFILE
-  apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip python3-wheel python3-build tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev >> $LOGFILE
+  echo "apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip python3-wheel python3-build python3-async-lru tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev" | tee -a $LOGFILE
+  apt install -y nginx python3 net-tools bc expect v4l-utils iptables vim dos2unix screen tmate nfs-common gpiod ffmpeg dialog iptables dnsmasq git python3-pip python3-wheel python3-build python3-async-lru tesseract-ocr tesseract-ocr-eng libasound2-dev libsndfile-dev libspeexdsp-dev libdrm-dev >> $LOGFILE
 
   sed -i -e 's/#port=5353/port=5353/g' /etc/dnsmasq.conf
 

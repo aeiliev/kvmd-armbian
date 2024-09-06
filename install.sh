@@ -503,12 +503,9 @@ build-ustreamer() {
   cd ustreamer/
   make WITH_GPIO=1 WITH_SYSTEMD=1 WITH_JANUS=1 WITH_PYTHON=1 WITH_V4P=1 -j
   make install
-  echo "coping ustreamer python lib"
-  cp -rv python/root/* /
+  cp -r python/root/* /
   # kvmd service is looking for /usr/bin/ustreamer
   ln -sf /usr/local/bin/ustreamer* /usr/bin/
-  ln -sfv /usr/local/lib/python3.1*/dist-packages/ustreamer-* ${PYTHONDIR}
-  ln -sfv /usr/local/lib/python3.1*/dist-packages/ustreamer.cpython-* ${PYTHONDIR}
 
   # add janus support
   mkdir -p /usr/lib/ustreamer/janus
@@ -629,6 +626,8 @@ fix-python-symlinks(){
     # Debian python版本比 pikvm官方的低一些
     ln -sf /usr/lib/python3.1*/site-packages/kvmd* ${PYTHONDIR}
   fi
+  ln -sf /usr/local/lib/python3.1*/dist-packages/ustreamer-* ${PYTHONDIR}
+  ln -sf /usr/local/lib/python3.1*/dist-packages/ustreamer.cpython-* ${PYTHONDIR}
 }
 
 apply-custom-patch(){

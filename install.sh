@@ -506,7 +506,8 @@ build-ustreamer() {
   cp -r python/root/* /
   # kvmd service is looking for /usr/bin/ustreamer
   ln -sf /usr/local/bin/ustreamer* /usr/bin/
-  ln -sf /usr/local/lib/python3.1*/dist-packages/ustreamer* ${PYTHONDIR}
+  ln -sf /usr/local/lib/python3.1*/dist-packages/ustreamer-* ${PYTHONDIR}
+  ln -sf /usr/local/lib/python3.1*/dist-packages/ustreamer.cpython-* ${PYTHONDIR}
 
   # add janus support
   mkdir -p /usr/lib/ustreamer/janus

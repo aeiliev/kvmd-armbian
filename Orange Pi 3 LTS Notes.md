@@ -59,11 +59,11 @@ mkdir -p ~/Documents/kvmd-armbian
 ```
 
 Extra commands
+```
 #sudo yq -i -y '.kvmd.hid.jiggler.enabled = true' /etc/kvmd/override.yaml
 #sudo yq -i -y '.kvmd.hid.jiggler.active = false' /etc/kvmd/override.yaml
 #sudo yq -i -y '.kvmd.streamer.resolution.default = "1920x1080"' /etc/kvmd/override.yaml
 #sudo yq -i -y '.vnc.server.host = "0.0.0.0"' /etc/kvmd/override.yaml
-```
 
 # to uninstall
 groupdel kvmd-webterm
@@ -79,6 +79,7 @@ groupdel kvmd-certbot
 #groupdel kvmd-vnc
 #groupdel kvmd-nginx
 #groupdel kvmd-janus
+```
 
 
 

@@ -20,7 +20,7 @@
 # Last change 20240526 2345 PDT
 VER=3.4
 set +x
-PIKVMREPO="https://files.pikvm.org/repos/arch/rpi4"
+PIKVMREPO="https://files.pikvm.org/repos/arch/rpi4-aarch64"
 KVMDFILE="kvmd-3.291-1-any.pkg.tar.xz"
 KVMDCACHE="/var/cache/kvmd"; mkdir -p $KVMDCACHE
 PKGINFO="${KVMDCACHE}/packages.txt"
@@ -416,8 +416,12 @@ install-kvmd-pkgs() {
   INSTLOG="${KVMDCACHE}/installed_ver.txt"; rm -f $INSTLOG
   date > $INSTLOG
 
+  version=$(ls "$KVMDCACHE" | \
+    grep -oP "$platform-\K(\d+\.\d+)(?=-\d+-any\.pkg\.tar\.xz)" | \
+    sort -V | tail -n 1)
+
 # uncompress platform package first
-  i=$( ls ${KVMDCACHE}/${platform}*.tar.xz )  ### install the most up to date kvmd-platform package
+  i=$( ls ${KVMDCACHE}/${platform}-${version}*.tar.xz )  ### install the most up to date kvmd-platform package
 
   # change the log entry to show 3.291 platform installed as we'll be forcing kvmd-3.291 instead of latest/greatest kvmd
   _platformver=$( echo $i | sed -e 's/3\.29[2-9]*/3.291/g' -e 's/3\.3[0-9]*/3.291/g' -e 's/3.2911/3.291/g' -e 's/4\.[0-9].*-/3.291-/g' )
@@ -425,7 +429,7 @@ install-kvmd-pkgs() {
   tar xfJ $i
 
 # then uncompress, kvmd-{version}, kvmd-webterm, and janus packages
-  for i in $( ls ${KVMDCACHE}/*.tar.xz | egrep 'kvmd-[0-9]|webterm' )
+  for i in $( ls ${KVMDCACHE}/*.tar.xz | egrep 'kvmd-${version}|webterm' )
   do
     case $i in
       *kvmd-3.29[2-9]*|*kvmd-3.[3-9]*|*kvmd-[45].[1-9]*)  # if latest/greatest is 3.292 and higher, then force 3.291 install

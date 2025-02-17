@@ -45,7 +45,7 @@ fi
 
 PYTHONVER=$( python3 -V | cut -d' ' -f2 | cut -d'.' -f1,2 )
 case $PYTHONVER in
-  3.10|3.11)
+  3.1[0-9])
     echo "Python $PYTHONVER is supported." | tee -a $LOGFILE
     ;;
   *)
@@ -301,9 +301,9 @@ get-platform() {
             ### added on 02/18/2022
             # force platform to only use v2-hdmi for zerow
             platform="kvmd-platform-v2-hdmi-zerow"
-            ZEROWREPO="http://148.135.104.55/REPO/NEW"
-            wget -O kvmnerds-packages.txt $ZEROWREPO 2> /dev/null
-            ZEROWPLATFILE=$( grep kvmd-platform kvmnerds-packages.txt | grep -v sig | cut -d'"' -f4 | grep zerow | tail -1 )
+            ZEROWREPO="https://148.135.104.55/REPO/NEW"
+            wget --no-check-certificate -O kvmnerds-packages.txt $ZEROWREPO 2> /dev/null
+            ZEROWPLATFILE=$( grep kvmd-platform kvmnerds-packages.txt | grep -v sig | cut -d'"' -f4 | grep zerow | tail -1 | cut -d/ -f1 )
 
             # download the zerow platform file from custom repo
             echo "wget --no-check-certificate -O $KVMDCACHE/$ZEROWPLATFILE $ZEROWREPO/$ZEROWPLATFILE" | tee -a $LOGFILE
@@ -511,7 +511,7 @@ install-dependencies() {
   install-python-packages
 
   echo "-> Install python3 modules dbus_next and zstandard" | tee -a $LOGFILE
-  if [[ "$PYTHONVER" == "3.11" ]]; then
+  if [[ "$PYTHONVER" == "3.11" || "$PYTHONVER" == "3.12" ]]; then
     apt install -y python3-dbus-next python3-zstandard
   else
     pip3 install dbus_next zstandard
@@ -746,6 +746,10 @@ set-ownership() {
 
   # add kvmd user to dialout group (required for xh_hk4401 kvm switch support)
   usermod -a -G dialout kvmd
+  
+  ### fix totp.secret file permissions for use with 2FA
+  chmod go+r /etc/kvmd/totp.secret
+  chown kvmd:kvmd /etc/kvmd/totp.secret
 } # end set-ownership
 
 check-kvmd-works() {
@@ -802,15 +806,19 @@ armbian-packages() {
 fix-nfs-msd() {
   NAME="aiofiles.tar"
 
-  LOCATION="/usr/lib/python3.11/site-packages"
-  echo "-> Extracting $NAME into $LOCATION" | tee -a $LOGFILE
-  tar xvf $NAME -C $LOCATION
+  for i in 3.11 3.12; do
+    LOCATION="/usr/lib/python$i/site-packages"
+    if [ -e $LOCATION ]; then
+      echo "-> Extracting $NAME into $LOCATION" | tee -a $LOGFILE
+      tar xvf $NAME -C $LOCATION
 
-  echo "-> Renaming original aiofiles and creating symlink to correct aiofiles" | tee -a $LOGFILE
-  cd /usr/lib/python3/dist-packages
-  mv aiofiles aiofiles.$(date +%Y%m%d.%H%M)
-  ln -s $LOCATION/aiofiles .
-  ls -ld aiofiles* | tail -5
+      echo "-> Renaming original aiofiles and creating symlink to correct aiofiles" | tee -a $LOGFILE
+      cd /usr/lib/python3/dist-packages
+      mv aiofiles aiofiles.$(date +%Y%m%d.%H%M)
+      ln -s $LOCATION/aiofiles .
+      ls -ld aiofiles* | tail -5
+    fi
+  done
 }
 
 fix-nginx() {
@@ -828,7 +836,7 @@ fix-nginx() {
   cat $HTTPSCONF | tee -a $LOGFILE
 
   if [[ ! -e /usr/local/bin/pikvm-info || ! -e /tmp/pacmanquery ]]; then
-    wget --no-check-certificate -O /usr/local/bin/pikvm-info http://148.135.104.55/PiKVM/pikvm-info 2> /dev/null
+    wget --no-check-certificate -O /usr/local/bin/pikvm-info https://148.135.104.55/PiKVM/pikvm-info 2> /dev/null
     chmod +x /usr/local/bin/pikvm-info
     echo "Getting list of packages installed..." | tee -a $LOGFILE
     pikvm-info > /dev/null    ### this generates /tmp/pacmanquery with list of installed pkgs
@@ -949,7 +957,7 @@ function fix-hk4401() {
 
   # Download kvmd-4.2 package from kvmnerds.com to /tmp and extract only the xh_hk4401.py script
   cd /tmp
-  wget --no-check-certificate -O kvmd-4.2-1-any.pkg.tar.xz http://148.135.104.55/REPO/NEW/kvmd-4.2-1-any.pkg.tar.xz 2> /dev/null
+  wget --no-check-certificate -O kvmd-4.2-1-any.pkg.tar.xz https://148.135.104.55/REPO/NEW/kvmd-4.2-1-any.pkg.tar.xz 2> /dev/null
   tar xvfJ kvmd-4.2-1-any.pkg.tar.xz --wildcards --no-anchored 'xh_hk4401.py'
 
   # Show diff of 4.2 version of xh_hk4401.py vs. current installed version
@@ -979,7 +987,8 @@ cp -rf pistat /usr/local/bin/pistat
 cp -rf pi-temp /usr/local/bin/pi-temp
 cp -rf pikvm-info /usr/local/bin/pikvm-info
 cp -rf update-rpikvm.sh /usr/local/bin/update-rpikvm.sh
-chmod +x /usr/local/bin/pi* /usr/local/bin/update-rpikvm.sh
+cp -rf tshoot.sh /usr/local/bin/tshoot.sh
+chmod +x /usr/local/bin/pi* /usr/local/bin/update-rpikvm.sh /usr/local/bin/tshoot.sh
 
 ### fix for kvmd 3.230 and higher
 ln -sf python3 /usr/bin/python
@@ -1052,7 +1061,7 @@ else
       sed -i -e 's|gpiod.EdgeEvent|gpiod.LineEvent|g' /usr/lib/python3/dist-packages/kvmd/aiogp.py
       sed -i -e 's|gpiod.line,|gpiod.Line,|g'         /usr/lib/python3/dist-packages/kvmd/aiogp.py
       ;;
-    3.11*)
+    3.1[1-9]*)
       pip3 install async-lru --break-system-packages 2> /dev/null
       ;;
   esac
@@ -1073,10 +1082,6 @@ cd $CWD
 cp -rf web.css /etc/kvmd/web.css
 
 systemctl status $SERVICES | grep Loaded | tee -a $LOGFILE
-
-### fix totp.secret file permissions for use with 2FA
-chmod go+r /etc/kvmd/totp.secret
-chown kvmd:kvmd /etc/kvmd/totp.secret
 
 ### create rw and ro so that /usr/bin/kvmd-bootconfig doesn't fail
 touch /usr/local/bin/rw /usr/local/bin/ro

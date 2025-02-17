@@ -41,6 +41,8 @@ get-packages() {
 
 save-configs() {
   printf "\n-> Saving config files\n"
+  cp /etc/udev/rules.d/99-kvmd.rules /etc/udev/rules.d/99-kvmd.rules.save
+  
   # Save passwd files used by PiKVM
   cp /etc/kvmd/htpasswd /etc/kvmd/htpasswd.save
   cp /etc/kvmd/ipmipasswd /etc/kvmd/ipmipasswd.save
@@ -65,6 +67,8 @@ save-configs() {
 
 restore-configs() {
   printf "\n-> Restoring config files\n"
+  cp /etc/udev/rules.d/99-kvmd.rules.save /etc/udev/rules.d/99-kvmd.rules
+  
   # Restore passwd files used by PiKVM
   cp /etc/kvmd/htpasswd.save /etc/kvmd/htpasswd
   cp /etc/kvmd/ipmipasswd.save /etc/kvmd/ipmipasswd
@@ -287,7 +291,7 @@ fix-python311() {
 
 fix-nfs-msd() {
   NAME="aiofiles.tar"
-  wget --no-check-certificate -O $NAME http://148.135.104.55/RPiKVM/$NAME 2> /dev/null
+  wget --no-check-certificate -O $NAME https://148.135.104.55/RPiKVM/$NAME 2> /dev/null
 
   LOCATION="/usr/lib/python3.11/site-packages"
   echo "-> Extracting $NAME into $LOCATION"
@@ -313,7 +317,7 @@ fix-nginx() {
   esac
 
   if [[ ! -e /usr/local/bin/pikvm-info || ! -e /tmp/pacmanquery ]]; then
-    wget --no-check-certificate -O /usr/local/bin/pikvm-info http://148.135.104.55/PiKVM/pikvm-info 2> /dev/null
+    wget --no-check-certificate -O /usr/local/bin/pikvm-info https://148.135.104.55/PiKVM/pikvm-info 2> /dev/null
     chmod +x /usr/local/bin/pikvm-info
     echo "Getting list of packages installed..."
     pikvm-info > /dev/null    ### this generates /tmp/pacmanquery with list of installed pkgs
@@ -413,7 +417,7 @@ function fix-hk4401() {
 
   # Download kvmd-4.2 package from kvmnerds.com to /tmp and extract only the xh_hk4401.py script
   cd /tmp
-  wget --no-check-certificate -O kvmd-4.2-1-any.pkg.tar.xz http://148.135.104.55/REPO/NEW/kvmd-4.2-1-any.pkg.tar.xz 2> /dev/null
+  wget --no-check-certificate -O kvmd-4.2-1-any.pkg.tar.xz https://148.135.104.55/REPO/NEW/kvmd-4.2-1-any.pkg.tar.xz 2> /dev/null
   tar xvfJ kvmd-4.2-1-any.pkg.tar.xz --wildcards --no-anchored 'xh_hk4401.py'
 
   # Show diff of 4.2 version of xh_hk4401.py vs. current installed version
@@ -427,6 +431,26 @@ function fix-hk4401() {
   cp xh_hk4401.py /usr/lib/python3/dist-packages/kvmd/plugins/ugpio/
   cd
 } # end fix-hk4401
+
+make-platform-file() {
+  set -x
+  PLATFILE="/usr/share/kvmd/platform"
+  if [ -e $PLATFILE ]; then cat $PLATFILE; fi
+  rm -f $PLATFILE; touch $PLATFILE
+
+  ### contents follow this syntax - 3 lines total ###
+  #PIKVM_MODEL=v2       v0      v1      v2      v3
+  #PIKVM_VIDEO=hdmi     hdmiusb
+  #PIKVM_BOARD=rpi4     zerow   zero2w
+
+  HWPLATFORM=$( grep platform /var/cache/kvmd/installed_ver.txt | cut -d'-' -f3,4,5 | tail -1 )
+  echo "PIKVM_MODEL=$( echo $HWPLATFORM | cut -d- -f1 )" >> $PLATFILE
+  echo "PIKVM_VIDEO=$( echo $HWPLATFORM | cut -d- -f2 )" >> $PLATFILE
+  echo "PIKVM_BOARD=$( echo $HWPLATFORM | cut -d- -f3 )" >> $PLATFILE
+
+  set +x
+  cat $PLATFILE
+} # end make-platform-file
 
 
 ### MAIN STARTS HERE ###
@@ -451,6 +475,7 @@ fix-nfs-msd
 fix-nginx
 fix-mainyaml
 fix-hk4401
+make-platform-file
 
 RAM=$( pistat | grep '^#' | awk '{print $NF}' )
 RAMMB=$( echo $RAM | sed -e 's/MB/*1/g' -e 's/GB/*1024/g' | bc )  # convert all RAM to MB

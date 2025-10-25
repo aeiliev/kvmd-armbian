@@ -120,7 +120,7 @@ install-python-packages() {
   for i in $( echo "aiofiles aiohttp appdirs asn1crypto async-timeout bottle cffi chardet click
 colorama cryptography dateutil dbus dev hidapi idna libgpiod mako marshmallow more-itertools multidict netifaces
 packaging passlib pillow ply psutil pycparser pyelftools pyghmi pygments pyparsing requests semantic-version
-setproctitle setuptools six spidev systemd tabulate urllib3 wrapt xlib yaml yarl pyotp qrcode serial " )
+setproctitle setuptools six spidev systemd tabulate urllib3 wrapt xlib yaml yarl pyotp qrcode serial serial-asyncio" )
   do
     echo "apt-get install python3-$i -y" | tee -a $LOGFILE
     apt-get install python3-$i -y >> $LOGFILE
@@ -247,8 +247,12 @@ get-packages() {
   wget --no-check-certificate ${PIKVMREPO} -O ${PKGINFO} 2> /dev/null
   echo
 
-  # Download each of the pertinent packages for Rpi3, webterm, and the main service
-  for pkg in `egrep 'janus|kvmd' ${PKGINFO} | grep -v sig | cut -d'>' -f1 | cut -d'"' -f2 | egrep -v 'fan|oled' | egrep 'janus|pi3|webterm|kvmd-[0-9]'`
+  # only get the latest kvmd version
+  LATESTKVMD=$( grep kvmd-[0-9] $PKGINFO | grep -v sig | tail -1 )
+  VERSION=$( echo $LATESTKVMD | cut -d'-' -f2 )
+
+  # Download each of the pertinent packages for Rpi4, webterm, and the main service
+  for pkg in `egrep "janus|$LATESTKVMD|$platform-$VERSION|webterm" ${PKGINFO} | grep -v sig | cut -d'>' -f1 | cut -d'"' -f2`
   do
     rm -f ${KVMDCACHE}/$pkg*
     echo "wget --no-check-certificate ${PIKVMREPO}/$pkg -O ${KVMDCACHE}/$pkg" | tee -a $LOGFILE
